@@ -134,4 +134,5 @@ func insertTokens(store repository.TokenRepository, tokens []string, tokensPool 
 		log.Println("Error in inserting batch tokens, err: ", err)
 	}
 	tokensPool.Put(tokens)
+
 }
