@@ -80,6 +80,5 @@ func benchmarkGenerateTokensFile(nt int, b *testing.B) {
 	}
 }
 
-func BenchmarkGTF1000(b *testing.B)       { benchmarkGenerateTokensFile(1000, b) }
-func BenchmarkGTF10Million(b *testing.B)  { benchmarkGenerateTokensFile(nTokens, b) }
-func BenchmarkGTF100Million(b *testing.B) { benchmarkGenerateTokensFile(nTokens*10, b) }
+func BenchmarkGTF1000(b *testing.B)      { benchmarkGenerateTokensFile(1000, b) }
+func BenchmarkGTF10Million(b *testing.B) { benchmarkGenerateTokensFile(nTokens, b) }

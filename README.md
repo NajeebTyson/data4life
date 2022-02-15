@@ -28,7 +28,7 @@ I have tried both PostreSQL (SQL) and MongoDB (NoSQL) to store the tokens. Here 
 | ---------- | ----------------- | ----------- | ------- |
 | 10 million | 1000/50           | 60 s        | 23 s    |
 | 10 million | 60,000/40         | 50 s        | 34 s    |
-| 10 million | 5,000/40          | 61 s        | 21 s    |
+| 10 million | 5,000/40          | 61 s        | 17 s    |
 
 I have tried with many options of batch size and no of go-routiens but he optimal solution which worked for me is using **MongoDB** with **batch size 5000** and **40 go routines** to insert batches in parallel.
 

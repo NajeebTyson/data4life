@@ -2,7 +2,7 @@ package reader
 
 import (
 	"data4life/internal/repository"
-	"fmt"
+	"data4life/pkg/token"
 	"io"
 	"log"
 	"os"
@@ -24,7 +24,7 @@ func ReadTokensFile(store repository.TokenRepository, filename string, tokenLeng
 	}()
 
 	var (
-		tokens = make(map[string]int)
+		tokens = make(map[token.Token]int)
 		wg     = &sync.WaitGroup{}
 		mtx    = &sync.RWMutex{}
 		count  = 0
@@ -65,39 +65,40 @@ readLoop:
 	return count, nil
 }
 
-func processChunk(data string, tokensMap map[string]int, mtx *sync.RWMutex) int {
+func processChunk(data string, tokensMap map[token.Token]int, mtx *sync.RWMutex) int {
 	tokens := strings.Split(data, "\n")
 	if tokens[len(tokens)-1] == "" {
 		tokens = tokens[:len(tokens)-1]
 	}
 
-	for _, token := range tokens {
+	for _, t := range tokens {
+		tok := token.Token(t)
 		mtx.RLock()
-		count, ok := tokensMap[token]
+		count, ok := tokensMap[tok]
 		mtx.RUnlock()
 
 		mtx.Lock()
 		if !ok {
-			tokensMap[token] = 0
+			tokensMap[tok] = 0
 		}
-		tokensMap[token] = count + 1
+		tokensMap[tok] = count + 1
 		mtx.Unlock()
 	}
 
 	return len(tokens)
 }
 
-func storeTokens(store repository.TokenRepository, tokens map[string]int) error {
+func storeTokens(store repository.TokenRepository, tokens map[token.Token]int) error {
 	var (
 		poolCount       = 40
 		insertBatchSize = 500
 		iter            = 0
 		wg              = &sync.WaitGroup{}
-		ch              = make(chan []string, poolCount)
-		uniqueTokens    = make([]string, insertBatchSize)
+		ch              = make(chan []token.Token, poolCount)
+		uniqueTokens    = make([]token.Token, insertBatchSize)
 	)
 
-	fmt.Printf("Storing tokens, pool size: %d, map size: %d\n", poolCount, len(tokens))
+	log.Printf("Storing tokens, pool size: %d, map size: %d\n", poolCount, len(tokens))
 
 	// creating go routines pool which stores tokens into DB
 	for i := 0; i < poolCount; i++ {
@@ -111,13 +112,13 @@ func storeTokens(store repository.TokenRepository, tokens map[string]int) error 
 	}
 
 	// passing batch of tokens into channel which consumed in go routines
-	for token := range tokens {
-		uniqueTokens[iter] = token
+	for t := range tokens {
+		uniqueTokens[iter] = t
 		iter++
 		if iter == insertBatchSize {
 			ch <- uniqueTokens
 			iter = 0
-			uniqueTokens = make([]string, insertBatchSize)
+			uniqueTokens = make([]token.Token, insertBatchSize)
 		}
 	}
 	if iter < insertBatchSize {
@@ -130,7 +131,7 @@ func storeTokens(store repository.TokenRepository, tokens map[string]int) error 
 	return nil
 }
 
-func insertTokens(store repository.TokenRepository, tokens []string) {
+func insertTokens(store repository.TokenRepository, tokens []token.Token) {
 	err := store.AddTokenBatch(tokens)
 	if err != nil {
 		log.Println("Error in inserting batch tokens, err: ", err)

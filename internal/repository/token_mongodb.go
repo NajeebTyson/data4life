@@ -51,15 +51,15 @@ func NewTokenStoreMongodb(dbName string) (*TokenStoreMongodb, error) {
 
 }
 
-func (s *TokenStoreMongodb) AddToken(t *token.Token) error {
-	tt := bson.D{{tokenAttribute, t.Data}}
+func (s *TokenStoreMongodb) AddToken(t token.Token) error {
+	tt := bson.D{{tokenAttribute, t}}
 	if _, err := s.db.Collection(collection).InsertOne(context.TODO(), tt); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *TokenStoreMongodb) AddTokenBatch(tokens []string) error {
+func (s *TokenStoreMongodb) AddTokenBatch(tokens []token.Token) error {
 	data := make([]interface{}, len(tokens))
 	for i, t := range tokens {
 		data[i] = bson.D{{tokenAttribute, t}}
@@ -71,7 +71,7 @@ func (s *TokenStoreMongodb) AddTokenBatch(tokens []string) error {
 	return nil
 }
 
-func (s *TokenStoreMongodb) GetToken(t string) (*token.Token, error) {
+func (s *TokenStoreMongodb) GetToken(t token.Token) (*token.Token, error) {
 	filter := bson.D{{tokenAttribute, t}}
 	var result struct {
 		Token string
@@ -82,10 +82,11 @@ func (s *TokenStoreMongodb) GetToken(t string) (*token.Token, error) {
 		return nil, err
 	}
 
-	return &token.Token{Data: result.Token}, nil
+	tok := token.Token(result.Token)
+	return &tok, nil
 }
 
-func (s *TokenStoreMongodb) DeleteToken(t string) error {
+func (s *TokenStoreMongodb) DeleteToken(t token.Token) error {
 	filter := bson.D{{tokenAttribute, t}}
 	_, err := s.db.Collection(collection).DeleteOne(context.TODO(), filter)
 	if err != nil {

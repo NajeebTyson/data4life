@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"data4life/internal/utils"
 	"data4life/pkg/token"
 	"database/sql"
 	"fmt"
@@ -28,19 +27,19 @@ func (s *TokenStorePostgres) Close() {
 	}
 }
 
-func (s *TokenStorePostgres) AddToken(t *token.Token) error {
+func (s *TokenStorePostgres) AddToken(t token.Token) error {
 	sqlStatement := `
 		INSERT INTO tokens (token)
 		VALUES ($1)
 	`
-	err := s.conn.QueryRow(sqlStatement, t.Data).Err()
+	err := s.conn.QueryRow(sqlStatement, t).Err()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *TokenStorePostgres) AddTokenBatch(tokens []string) error {
+func (s *TokenStorePostgres) AddTokenBatch(tokens []token.Token) error {
 	var builder strings.Builder
 	for i := 1; i <= len(tokens); i++ {
 		builder.WriteString(fmt.Sprintf("($%d),", i))
@@ -49,14 +48,14 @@ func (s *TokenStorePostgres) AddTokenBatch(tokens []string) error {
 	q = q[:len(q)-1] // to remove the comma from the last
 	sqlStatement := fmt.Sprintf("INSERT INTO tokens (token) VALUES %s;", q)
 
-	_, err := s.conn.Exec(sqlStatement, utils.ConvertToInterfaceSlice(tokens)...)
+	_, err := s.conn.Exec(sqlStatement, token.ConvertToInterfaceSlice(tokens)...)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *TokenStorePostgres) GetToken(t string) (*token.Token, error) {
+func (s *TokenStorePostgres) GetToken(t token.Token) (*token.Token, error) {
 	var queryToken token.Token
 
 	sqlStatement := `
@@ -64,7 +63,7 @@ func (s *TokenStorePostgres) GetToken(t string) (*token.Token, error) {
 	`
 
 	row := s.conn.QueryRow(sqlStatement, t)
-	switch err := row.Scan(&queryToken.Data); err {
+	switch err := row.Scan(&queryToken); err {
 	case sql.ErrNoRows:
 		return nil, nil
 	case nil:
@@ -74,7 +73,7 @@ func (s *TokenStorePostgres) GetToken(t string) (*token.Token, error) {
 	}
 }
 
-func (s *TokenStorePostgres) DeleteToken(t string) error {
+func (s *TokenStorePostgres) DeleteToken(t token.Token) error {
 	sqlStatement := `
 		DELETE FROM tokens
 		WHERE token = $1;

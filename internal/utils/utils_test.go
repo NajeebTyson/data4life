@@ -71,18 +71,3 @@ func TestGenerateRandomStringSimple(t *testing.T) {
 		})
 	}
 }
-
-func TestConvertToInterfaceSlice(t *testing.T) {
-	testCases := []string{
-		"Hello",
-		"world",
-		"I love coding",
-	}
-
-	res := ConvertToInterfaceSlice(testCases)
-	for i := range testCases {
-		if testCases[i] != res[i] {
-			t.Errorf("Expected string %s, got %s", testCases[i], res[i])
-		}
-	}
-}

@@ -30,13 +30,3 @@ func GenerateRandomStringSimple(n int) string {
 	randSource := NewRandomGenerator(int(time.Now().UnixNano()))
 	return GenerateRandomString(n, randSource)
 }
-
-// Convert string slice into interface slice, because GO does not support passing
-// string slice in variadic function which accpets variadic interface
-func ConvertToInterfaceSlice(items []string) []interface{} {
-	itemsInterface := make([]interface{}, len(items))
-	for i, item := range items {
-		itemsInterface[i] = item
-	}
-	return itemsInterface
-}

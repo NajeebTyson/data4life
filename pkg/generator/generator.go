@@ -67,7 +67,7 @@ func generateTokens(wg *sync.WaitGroup, tokenChan chan<- []byte, seed int, n int
 	var builder strings.Builder
 	for i := 0; i < n; i++ {
 		token := tokenGenerator.NewToken()
-		builder.WriteString(fmt.Sprintln(token.Data))
+		builder.WriteString(fmt.Sprintln(token))
 	}
 
 	tokenChan <- []byte(builder.String())

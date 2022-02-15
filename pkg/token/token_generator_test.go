@@ -33,7 +33,7 @@ func TestTokenGenerator(t *testing.T) {
 			gen := NewTokenGenerator(tc.seed, tc.tokenSize)
 			token := gen.NewToken()
 
-			if tc.token.Data != token.Data {
+			if tc.token != token {
 				t.Fatalf("Expected token: %v, got: %v", tc.token, token)
 			}
 		})

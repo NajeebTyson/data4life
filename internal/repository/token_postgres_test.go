@@ -26,10 +26,10 @@ func TestAddToken(t *testing.T) {
 
 	token := token.New(7)
 
-	if err := store.AddToken(&token); err != nil {
+	if err := store.AddToken(token); err != nil {
 		t.Fatal(err)
 	}
-	queryToken, err := store.GetToken(token.Data)
+	queryToken, err := store.GetToken(token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestAddToken(t *testing.T) {
 		t.Fatal("token not found")
 	}
 
-	if err := store.DeleteToken(token.Data); err != nil {
+	if err := store.DeleteToken(token); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -49,10 +49,10 @@ func TestAddTokenBatch(t *testing.T) {
 	}
 	defer store.Close()
 
-	tokens := []string{
-		token.New(testTokenSize).Data,
-		token.New(testTokenSize).Data,
-		token.New(testTokenSize).Data,
+	tokens := []token.Token{
+		token.New(testTokenSize),
+		token.New(testTokenSize),
+		token.New(testTokenSize),
 	}
 
 	if err := store.AddTokenBatch(tokens); err != nil {
