@@ -1,12 +1,12 @@
 ## Coding task - Data4Life
 
-A project in Go Lang which consists consist two sub projects:
+A project in Go Lang which consist of two sub projects:
 
 * ### Generator
-  Generator that creates a file with 10 million random tokens, one per line, each consisting of lowercase letters a-z.
+  Generator, that creates a file with 10 million random tokens, one per line, each consisting of lowercase letters a-z.
 
 * ### Reader
-  Reader that reads the file and stores the tokens in the database. Some tokens will occur multiple time so there must be only one entry of token in the DB.
+  Reader, that reads the file and stores the tokens in the database. Some tokens will occur multiple time so there must be only one entry of token in the DB.
 
 ## Solution
 
@@ -22,13 +22,13 @@ Reader takes aroung **8-11 seconds** to read 10 million the tokens and create in
 
 ### Database
 
-I have tried both PostreSQL (SQL) and MongoDB (NoSQL) to store the tokens. Here is the benchmarks of token insertion I have got using both dbs.
+I have tried both PostreSQL (SQL) and MongoDB (NoSQL) to store the tokens. Here is the benchmarks of token insertion I have got using both dbs. The time in the table is for storing 10 million tokens not a single batch.
 
-| Batch/Go-routines | PostgresSql | MongoDB |
-| ----------------- | ----------- | ------- |
-| 1000/50           | 60 s        | 23 s    |
-| 60,000/40         | 50 s        | 34 s    |
-| 5,000/40          | 61 s        | 21 s    |
+| Tokens     | Batch/Go-routines | PostgresSql | MongoDB |
+| ---------- | ----------------- | ----------- | ------- |
+| 10 million | 1000/50           | 60 s        | 23 s    |
+| 10 million | 60,000/40         | 50 s        | 34 s    |
+| 10 million | 5,000/40          | 61 s        | 21 s    |
 
 I have tried with many options of batch size and no of go-routiens but he optimal solution which worked for me is using **MongoDB** with **batch size 5000** and **40 go routines** to insert batches in parallel.
 
