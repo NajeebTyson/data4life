@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 func ReadTokensFile(store repository.TokenRepository, filename string, tokenLength int) (tokenCount int, errResult error) {
@@ -22,18 +23,17 @@ func ReadTokensFile(store repository.TokenRepository, filename string, tokenLeng
 		}
 	}()
 
-	tokens := make(map[string]int)
 	var (
-		wg  = &sync.WaitGroup{}
-		mtx = &sync.RWMutex{}
+		tokens = make(map[string]int)
+		wg     = &sync.WaitGroup{}
+		mtx    = &sync.RWMutex{}
+		count  = 0
+		t1     = time.Now()
 	)
 
-	count := 0
-	routines := 0
 readLoop:
 	for {
-
-		buf := make([]byte, (tokenLength+1)*1024*128)
+		buf := make([]byte, (tokenLength+1)*1024*64)
 		c, err := fi.Read(buf)
 		buf = buf[:c]
 
@@ -45,18 +45,21 @@ readLoop:
 		}
 
 		wg.Add(1)
-		routines += 1
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
 			n := processChunk(string(buf), tokens, mtx)
 			count += n
 		}(wg)
 	}
-	fmt.Printf("Total routines %d\n", routines)
 	wg.Wait()
+	t2 := time.Now()
 
-	fmt.Printf("Processed %d tokens and %d unique tokens, now storing in Database\n", count, len(tokens))
+	fmt.Printf("Processed %d tokens and %d unique tokens in %.2f seconds\n", count, len(tokens), t2.Sub(t1).Seconds())
+	dt1 := time.Now()
 	storeTokens(store, tokens)
+	dt2 := time.Now()
+	fmt.Printf("Stored tokens in %.2f seconds\n", dt2.Sub(dt1).Seconds())
+
 	return count, nil
 }
 
@@ -84,43 +87,61 @@ func processChunk(data string, tokensMap map[string]int, mtx *sync.RWMutex) int 
 
 func storeTokens(store repository.TokenRepository, tokens map[string]int) error {
 	var (
-		// poolCount       = runtime.NumCPU()
-		poolCount       = 20
-		insertBatchSize = 60000
-		tokensPool      = sync.Pool{New: func() interface{} { return make([]string, insertBatchSize) }}
+		poolCount       = 40
+		insertBatchSize = 500
 		iter            = 0
 		wg              = &sync.WaitGroup{}
 		ch              = make(chan []string, poolCount)
-		// uniqueTokens    = make([]string, insertBatchSize)
+		uniqueTokens    = make([]string, insertBatchSize)
 	)
 
-	fmt.Printf("pool size: %d, map size: %d\n", poolCount, len(tokens))
+	fmt.Printf("Storing tokens, pool size: %d, map size: %d\n", poolCount, len(tokens))
 
 	for i := 0; i < poolCount; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for tokens := range ch {
-				insertTokens(store, tokens, &tokensPool)
+				insertTokens(store, tokens)
 			}
 		}()
 	}
 
-	batchTokens := tokensPool.Get().([]string)
 	for token := range tokens {
-		batchTokens[iter] = token
+		uniqueTokens[iter] = token
 		iter++
 		if iter == insertBatchSize {
-			ch <- batchTokens
+			ch <- uniqueTokens
 			iter = 0
-			// uniqueTokens = make([]string, insertBatchSize)
-			batchTokens = tokensPool.Get().([]string)
+			uniqueTokens = make([]string, insertBatchSize)
 		}
 	}
-
 	if iter < insertBatchSize {
-		ch <- batchTokens[:iter]
+		ch <- uniqueTokens[:iter]
 	}
+
+	// uniqueTokens := make([]string, len(tokens))
+	// i := 0
+	// for token := range tokens {
+	// 	uniqueTokens[i] = token
+	// 	i++
+	// }
+
+	// start := 0
+	// end := 0
+	// var batch []string
+	// for {
+	// 	end += insertBatchSize
+	// 	if end > len(uniqueTokens) {
+	// 		end = len(uniqueTokens)
+	// 		batch = uniqueTokens[start:end]
+	// 		break
+	// 	}
+	// 	batch = uniqueTokens[start:end]
+	// 	start = end
+	// 	ch <- batch
+	// }
+	// ch <- batch
 
 	close(ch)
 	wg.Wait()
@@ -128,11 +149,9 @@ func storeTokens(store repository.TokenRepository, tokens map[string]int) error 
 	return nil
 }
 
-func insertTokens(store repository.TokenRepository, tokens []string, tokensPool *sync.Pool) {
+func insertTokens(store repository.TokenRepository, tokens []string) {
 	err := store.AddTokenBatch(tokens)
 	if err != nil {
 		log.Println("Error in inserting batch tokens, err: ", err)
 	}
-	tokensPool.Put(tokens)
-
 }

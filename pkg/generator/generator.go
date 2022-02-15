@@ -20,9 +20,13 @@ func GenerateTokensFile(filename string, n, tokenLength, seed int) (errResult er
 		}
 	}()
 
-	nRoutines := common.NRoutines
-	var wgWrite, wgRead sync.WaitGroup
-	tokenChan := make(chan []byte, nRoutines)
+	var (
+		nRoutines = common.NRoutines
+		wgRead    = sync.WaitGroup{}
+		wgWrite   = sync.WaitGroup{}
+		tokenChan = make(chan []byte, nRoutines)
+	)
+
 	for i := 0; i < nRoutines; i++ {
 		batch := n / nRoutines
 		if i == (nRoutines - 1) { // to put the remaining size in last batch

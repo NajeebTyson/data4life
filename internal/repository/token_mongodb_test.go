@@ -5,20 +5,16 @@ import (
 	"testing"
 )
 
-const (
-	testTokenSize = 7
-)
-
-func TestNewTokenStore(t *testing.T) {
-	store, err := NewTokenStore()
+func TestNewTokenStoreMongodb(t *testing.T) {
+	store, err := NewTokenStoreMongodb(dbnameMongodb)
 	if err != nil {
 		t.Fatal(err)
 	}
 	store.Close()
 }
 
-func TestAddToken(t *testing.T) {
-	store, err := NewTokenStore()
+func TestAddTokenMongodb(t *testing.T) {
+	store, err := NewTokenStoreMongodb(dbnameMongodb)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,8 +38,8 @@ func TestAddToken(t *testing.T) {
 	}
 }
 
-func TestAddTokenBatch(t *testing.T) {
-	store, err := NewTokenStore()
+func TestAddTokenBatchMongodb(t *testing.T) {
+	store, err := NewTokenStoreMongodb(dbnameMongodb)
 	if err != nil {
 		t.Fatal(err)
 	}

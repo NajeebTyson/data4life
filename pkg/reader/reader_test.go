@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	testDbName    = "data4life"
 	testTokenFile = "test_token.txt"
 	testTokenSize = 7
 	seed          = 777      // seed for random number generator
@@ -27,7 +28,7 @@ func TestReadTokensFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	store, err := repository.NewTokenStore()
+	store, err := repository.NewTokenStoreMongodb(testDbName)
 	if err != nil {
 		t.Fatal(err)
 	}
