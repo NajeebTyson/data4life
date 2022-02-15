@@ -54,11 +54,13 @@ readLoop:
 	wg.Wait()
 	t2 := time.Now()
 
-	fmt.Printf("Processed %d tokens and %d unique tokens in %.2f seconds\n", count, len(tokens), t2.Sub(t1).Seconds())
+	log.Printf("Processed %d tokens and %d unique tokens in %.2f seconds\n", count, len(tokens), t2.Sub(t1).Seconds())
 	dt1 := time.Now()
+
 	storeTokens(store, tokens)
+
 	dt2 := time.Now()
-	fmt.Printf("Stored tokens in %.2f seconds\n", dt2.Sub(dt1).Seconds())
+	log.Printf("Stored tokens in %.2f seconds\n", dt2.Sub(dt1).Seconds())
 
 	return count, nil
 }
@@ -97,6 +99,7 @@ func storeTokens(store repository.TokenRepository, tokens map[string]int) error 
 
 	fmt.Printf("Storing tokens, pool size: %d, map size: %d\n", poolCount, len(tokens))
 
+	// creating go routines pool which stores tokens into DB
 	for i := 0; i < poolCount; i++ {
 		wg.Add(1)
 		go func() {
@@ -107,6 +110,7 @@ func storeTokens(store repository.TokenRepository, tokens map[string]int) error 
 		}()
 	}
 
+	// passing batch of tokens into channel which consumed in go routines
 	for token := range tokens {
 		uniqueTokens[iter] = token
 		iter++
@@ -120,31 +124,8 @@ func storeTokens(store repository.TokenRepository, tokens map[string]int) error 
 		ch <- uniqueTokens[:iter]
 	}
 
-	// uniqueTokens := make([]string, len(tokens))
-	// i := 0
-	// for token := range tokens {
-	// 	uniqueTokens[i] = token
-	// 	i++
-	// }
-
-	// start := 0
-	// end := 0
-	// var batch []string
-	// for {
-	// 	end += insertBatchSize
-	// 	if end > len(uniqueTokens) {
-	// 		end = len(uniqueTokens)
-	// 		batch = uniqueTokens[start:end]
-	// 		break
-	// 	}
-	// 	batch = uniqueTokens[start:end]
-	// 	start = end
-	// 	ch <- batch
-	// }
-	// ch <- batch
-
-	close(ch)
-	wg.Wait()
+	close(ch) // closign the channel
+	wg.Wait() // waiting for go-routines to complete
 
 	return nil
 }
